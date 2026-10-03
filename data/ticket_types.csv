@@ -1,0 +1,4 @@
+id,code,name,description,price_delta
+1,adult,Adult,,0.00
+2,reduced,Reduced,Students and over 65,-2.00
+3,child,Child,Under 12,-3.00

@@ -26,3 +26,15 @@ service-account*.json
 
 # Agent local state
 .claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Runtime database rebuilt from data/*.csv
+var/
+*.sqlite3

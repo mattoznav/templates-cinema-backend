@@ -1,0 +1,19 @@
+id,slug,name
+1,action,Action
+2,adventure,Adventure
+3,animation,Animation
+4,biography,Biography
+5,comedy,Comedy
+6,crime,Crime
+7,drama,Drama
+8,family,Family
+9,fantasy,Fantasy
+10,history,History
+11,horror,Horror
+12,musical,Musical
+13,mystery,Mystery
+14,romance,Romance
+15,science-fiction,Science Fiction
+16,sport,Sport
+17,thriller,Thriller
+18,western,Western

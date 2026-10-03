@@ -1,0 +1,5 @@
+id,name,format,rows,seats_per_row,base_price
+1,Screen 1,IMAX,12,18,12.50
+2,Screen 2,Dolby Atmos,10,16,11.00
+3,Screen 3,Standard,9,14,9.00
+4,Studio,Standard,7,10,8.00
