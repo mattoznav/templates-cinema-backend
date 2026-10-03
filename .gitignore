@@ -1,0 +1,28 @@
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Secrets and local configuration: never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+*.mobileprovision
+key.properties
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+
+# Private notes and real data, kept out of git on purpose
+.private/
+*.local.*
+
+# Agent local state
+.claude/settings.local.json
