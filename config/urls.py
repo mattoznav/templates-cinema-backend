@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from apps.accounts.views import MeView, RegisterView
 from apps.bookings.views import BookingViewSet, TicketTypeViewSet, check_in
 from apps.catalog.views import GenreViewSet, MovieViewSet
+from apps.core.dashboard import summary
 from apps.core.views import health, venue
 from apps.halls.views import HallViewSet, SeatTypeViewSet
 from apps.payments import views as payments
@@ -24,6 +25,7 @@ api = [
     path("", include(router.urls)),
     path("venue/", venue, name="venue"),
     path("health/", health, name="health"),
+    path("admin/summary/", summary, name="admin-summary"),
     path("auth/register/", RegisterView.as_view(), name="register"),
     path("auth/token/", TokenObtainPairView.as_view(), name="token"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),

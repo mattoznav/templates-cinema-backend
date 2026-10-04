@@ -1,9 +1,10 @@
 from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
-from rest_framework import serializers, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from apps.core.permissions import IsStaffOrReadOnly
@@ -30,7 +31,6 @@ class MovieSerializer(serializers.ModelSerializer):
             "directors", "cast", "countries", "languages", "poster", "poster_url", "trailer_youtube_id",
             "trailer_url", "popularity", "source_url",
         ]
-        extra_kwargs = {"poster_url": {"write_only": True}}
 
     def get_poster(self, movie):
         if movie.poster_url:
@@ -58,6 +58,15 @@ class MovieViewSet(viewsets.ModelViewSet):
         if params.get("showing") == "upcoming":
             qs = qs.filter(showtimes__starts_at__gt=timezone.now()).distinct()
         return qs
+
+    def destroy(self, request, *args, **kwargs):
+        movie = self.get_object()
+        if movie.showtimes.filter(bookings__isnull=False).exists():
+            return Response(
+                {"detail": "This film has bookings. Move it to the archive instead of deleting it."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=["get"], permission_classes=[AllowAny], url_path="poster.svg", url_name="poster")
     def poster(self, request, slug=None):

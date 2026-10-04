@@ -94,13 +94,14 @@ Public reads, authenticated bookings, staff-only writes. Authentication uses JWT
 | POST | `/api/auth/register/` | anyone | Create an account, returns tokens |
 | POST | `/api/auth/token/`, `/api/auth/token/refresh/` | anyone | Sign in, refresh |
 | GET, PATCH | `/api/auth/me/` | user | Profile |
-| GET, POST | `/api/bookings/` | user | Own bookings (staff: all). Body: `{"showtime": 1, "seats": [{"seat": 10, "ticket_type": "adult"}]}` |
+| GET, POST | `/api/bookings/` | user | Own bookings (staff: all, with customer and payments). Body: `{"showtime": 1, "seats": [{"seat": 10, "ticket_type": "adult"}]}`. Staff filters: `q` (reference or email), `status`, `date`, `showtime` |
 | POST | `/api/bookings/<id>/checkout/` | user | Start paying |
 | POST | `/api/bookings/<id>/cancel/` | user | Cancel, with a refund if paid. Customers up to 2 hours before the show |
 | GET | `/api/payments/config/` | anyone | Active provider and its public key |
 | POST | `/api/payments/stripe/webhook/` | Stripe | Payment outcomes |
 | POST | `/api/tickets/<code>/check-in/` | staff | Scan a ticket at the door |
-| POST, PUT, PATCH, DELETE | `/api/movies/`, `/api/showtimes/` | staff | Manage the programme |
+| GET | `/api/admin/summary/` | staff | Seats sold, takings and check-ins for a day (`date`), per screening |
+| POST, PUT, PATCH, DELETE | `/api/movies/`, `/api/showtimes/` | staff | Manage the programme. Films and showtimes with bookings cannot be deleted, and a showtime cannot change screen once seats are booked |
 
 ## Maintenance
 

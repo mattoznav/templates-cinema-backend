@@ -1,6 +1,7 @@
-from datetime import timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import mixins, serializers, status, viewsets
@@ -44,12 +45,34 @@ class BookingSerializer(serializers.ModelSerializer):
     showtime = serializers.SerializerMethodField()
     seats = BookingSeatSerializer(many=True, read_only=True)
     can_cancel = serializers.SerializerMethodField()
+    customer = serializers.SerializerMethodField()
+    payments = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
         fields = [
             "id", "reference", "status", "showtime", "seats", "total", "currency", "expires_at",
-            "created_at", "confirmed_at", "cancelled_at", "can_cancel",
+            "created_at", "confirmed_at", "cancelled_at", "can_cancel", "customer", "payments",
+        ]
+
+    @property
+    def _staff(self):
+        request = self.context.get("request")
+        return bool(request and request.user.is_staff)
+
+    def get_customer(self, booking):
+        # Only the back office sees who booked
+        if not self._staff:
+            return None
+        user = booking.user
+        return {"email": user.email, "name": user.get_full_name()}
+
+    def get_payments(self, booking):
+        if not self._staff:
+            return None
+        return [
+            {"provider": p.provider, "status": p.status, "amount": p.amount, "created_at": p.created_at}
+            for p in booking.payments.all()
         ]
 
     def get_showtime(self, booking):
@@ -64,6 +87,8 @@ class BookingSerializer(serializers.ModelSerializer):
     def get_can_cancel(self, booking):
         if booking.status == Booking.Status.PENDING:
             return True
+        if booking.status == Booking.Status.CONFIRMED and self._staff:
+            return not any(s.ticket.checked_in_at for s in booking.seats.all() if hasattr(s, "ticket"))
         cutoff = booking.showtime.starts_at - timedelta(hours=settings.CANCELLATION_CUTOFF_HOURS)
         return booking.status == Booking.Status.CONFIRMED and timezone.now() < cutoff
 
@@ -93,17 +118,32 @@ class BookingCreateSerializer(serializers.Serializer):
 
 
 class BookingViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
-    """Customers see their own bookings, staff see all of them (filter with `status`)."""
+    """Customers see their own bookings, staff see all of them.
+
+    Filters: `status`. Staff only: `q` (reference or customer email), `showtime`, `date` (YYYY-MM-DD of the show).
+    """
 
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = Booking.objects.select_related("showtime__movie", "showtime__hall").prefetch_related(
-            "seats__seat__seat_type", "seats__ticket_type", "seats__ticket"
+        qs = Booking.objects.select_related("user", "showtime__movie", "showtime__hall").prefetch_related(
+            "seats__seat__seat_type", "seats__ticket_type", "seats__ticket", "payments"
         )
+        params = self.request.query_params
         if not self.request.user.is_staff:
             qs = qs.filter(user=self.request.user)
-        if status_filter := self.request.query_params.get("status"):
+        else:
+            if q := params.get("q"):
+                qs = qs.filter(Q(reference__iexact=q.strip()) | Q(user__email__icontains=q.strip()))
+            if showtime := params.get("showtime"):
+                qs = qs.filter(showtime_id=showtime)
+            if day := params.get("date"):
+                try:
+                    start = datetime.combine(date.fromisoformat(day), time.min, timezone.get_current_timezone())
+                except ValueError:
+                    raise ValidationError({"date": "Use the YYYY-MM-DD format."}) from None
+                qs = qs.filter(showtime__starts_at__gte=start, showtime__starts_at__lt=start + timedelta(days=1))
+        if status_filter := params.get("status"):
             qs = qs.filter(status=status_filter)
         return qs
 
@@ -120,7 +160,7 @@ class BookingViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
             return Response({"detail": str(exc), "seats": exc.labels}, status=status.HTTP_409_CONFLICT)
         except services.BookingError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(BookingSerializer(self.get_queryset().get(pk=booking.pk)).data, status=status.HTTP_201_CREATED)
+        return Response(BookingSerializer(self.get_queryset().get(pk=booking.pk), context=self.get_serializer_context()).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
     def checkout(self, request, pk=None):
@@ -149,7 +189,7 @@ class BookingViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
             booking = services.cancel(booking, by_staff=request.user.is_staff)
         except services.BookingError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(BookingSerializer(self.get_queryset().get(pk=booking.pk)).data)
+        return Response(BookingSerializer(self.get_queryset().get(pk=booking.pk), context=self.get_serializer_context()).data)
 
 
 class TicketTypeViewSet(viewsets.ReadOnlyModelViewSet):
