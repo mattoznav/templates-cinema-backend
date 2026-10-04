@@ -4,6 +4,7 @@ The demo never ships real movie artwork: posters are protected by copyright.
 Each movie gets a typographic poster with colours derived from its slug.
 """
 
+import colorsys
 import hashlib
 import textwrap
 from xml.sax.saxutils import escape
@@ -15,6 +16,12 @@ def _palette(seed: str) -> tuple[int, int]:
     digest = hashlib.sha256(seed.encode()).digest()
     hue = digest[0] * 360 // 256
     return hue, (hue + 20 + digest[1] % 40) % 360
+
+
+def _hex(hue: int, saturation: float, lightness: float) -> str:
+    # Plain hex colours: some SVG renderers (mobile ones included) do not read hsl()
+    r, g, b = colorsys.hls_to_rgb(hue / 360, lightness, saturation)
+    return f"#{round(r * 255):02x}{round(g * 255):02x}{round(b * 255):02x}"
 
 
 def render(movie) -> str:
@@ -30,12 +37,12 @@ def render(movie) -> str:
     return f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH} {HEIGHT}" width="{WIDTH}" height="{HEIGHT}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="hsl({hue_a} 70% 22%)"/>
-      <stop offset="1" stop-color="hsl({hue_b} 80% 10%)"/>
+      <stop offset="0" stop-color="{_hex(hue_a, 0.7, 0.22)}"/>
+      <stop offset="1" stop-color="{_hex(hue_b, 0.8, 0.1)}"/>
     </linearGradient>
     <radialGradient id="glow" cx="0.75" cy="0.2" r="0.7">
-      <stop offset="0" stop-color="hsl({hue_b} 90% 60%)" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="hsl({hue_b} 90% 60%)" stop-opacity="0"/>
+      <stop offset="0" stop-color="{_hex(hue_b, 0.9, 0.6)}" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="{_hex(hue_b, 0.9, 0.6)}" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="{WIDTH}" height="{HEIGHT}" fill="url(#bg)"/>

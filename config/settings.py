@@ -15,7 +15,8 @@ if not SECRET_KEY:
     if not DEBUG:
         raise environ.ImproperlyConfigured("Set SECRET_KEY: it is required when DEBUG is off.")
     SECRET_KEY = "insecure-development-key-do-not-use-in-production"
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+# 10.0.2.2 is how the Android emulator reaches this machine
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "10.0.2.2"])
 
 INSTALLED_APPS = [
     "django.contrib.admin",
