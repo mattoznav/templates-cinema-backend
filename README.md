@@ -111,3 +111,7 @@ Public reads, authenticated bookings, staff-only writes. Authentication uses JWT
 ## Maintenance
 
 `manage.py release_expired_holds` frees expired holds. Seat maps already do it when they are read; schedule it with cron to keep booking lists tidy.
+
+## License
+
+The code is released under the [MIT License](LICENSE). The synopsis column of `data/movies.csv` comes from Wikipedia and stays under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); the other movie facts come from Wikidata under CC0.
